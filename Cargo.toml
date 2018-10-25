@@ -1,0 +1,11 @@
+[package]
+name = "dister"
+version = "0.1.0"
+authors = ["avd <austin.v.davis@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+rayon = "1.0.2"
+ndarray= "0.12.0"
+num = "0.2.0"
+itertools = "0.7.8"
