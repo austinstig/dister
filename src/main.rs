@@ -93,6 +93,7 @@ fn load<P: AsRef<Path>>(filename: P) -> Result<Array2<i8>, ReadNpzError> {
     decoder.by_index(0)
 }
 
+
 fn main() {
 
     // load options
@@ -109,6 +110,9 @@ fn main() {
         fs::create_dir_all(&opt.outdir).expect("Could Not Create Output Directory!");
     }
 
+    // load csv of dispersion distances
+    let mut dispersion_table: HashMap<i16, f32> = HashMap::new();
+
     // load array from file
     let input = load(&opt.input).expect("couldn't load numpy array!");
     let (height, width): (usize,usize) = (input.shape()[0], input.shape()[1]);
@@ -118,7 +122,6 @@ fn main() {
     println!("there are {} values.", values.len());
 
     // compute a grid for each array
-    //values.par_iter().map(|v| {
     values.par_iter().for_each(|v| {
 
         // time the iteration
@@ -186,7 +189,31 @@ fn main() {
 
         // produce an output array for the distance
         output_f32(&distance, &opt.outdir.join(format!("distance-{}.npz", v)));
+
+        // apply the dispersion metrics to the distance array
+        if let Some(pix_per_yr) = dispersion_table.get(&v) {
+            let mut dispersion: Array2<f32> = Array2::from_elem((height, width), 0.0);
+            for i in 0..height {
+                for j in 0..width {
+                    // convert distance units in pixels
+                    // to the year since 0 that it will
+                    // take to spread the ecoclass to a
+                    // specific location on the grid.
+                    dispersion[[i,j]] = distance[[i,j]] / pix_per_yr;
+                }
+            }
+
+            // helpful message
+            println!("dispersion computation complete for: {}", v);
+
+            // produce an output distance per year array
+            output_f32(&dispersion, &opt.outdir.join(format!("dispersion-{}.npz", v)));
+        } else {
+            eprintln!("dispersion not computed for: {}", v);
+        }
+
     });
+
 }
 
 fn output_i16<P: AsRef<Path>>(array: &Array2<i16>, path: P) {
