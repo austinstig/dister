@@ -5,6 +5,7 @@ authors = ["avd <austin.v.davis@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+csv = "1.0.2"
 rayon = "1.0.2"
 ndarray= "0.12.0"
 num = "0.2.0"
@@ -13,3 +14,5 @@ byteorder = "1.2.7"
 ndarray-parallel = "0.9.0"
 ndarray-npy = "0.3.0"
 structopt = "0.2"
+serde = "1.0.81"
+serde_derive = "1.0.81"

@@ -6,6 +6,9 @@ extern crate ndarray;
 extern crate ndarray_npy;
 extern crate itertools;
 extern crate num;
+extern crate csv;
+extern crate serde;
+#[macro_use] extern crate serde_derive;
 #[macro_use] extern crate structopt;
 
 use rayon::prelude::*;
@@ -20,6 +23,7 @@ use std::io::prelude::*;
 use std::fs;
 use std::ops::Add;
 use std::path::{Path,PathBuf};
+use std::collections::HashMap;
 use byteorder::{LittleEndian, WriteBytesExt};
 use ndarray_npy::NpzReader;
 use ndarray_npy::NpzWriter;
@@ -34,6 +38,10 @@ struct Arguments {
     /// input .npz file
     #[structopt(name="INPUT_FILE", short="i", long="input")]
     input: PathBuf,
+
+    /// input file for pixel per year values
+    #[structopt(name="CSV_FILE", short="k", long="csv-distances")]
+    distances: PathBuf,
 
     /// output directory
     #[structopt(name="OUTPUT_DIRECTORY", short="o", long="output")]
@@ -111,7 +119,14 @@ fn main() {
     }
 
     // load csv of dispersion distances
-    let mut dispersion_table: HashMap<i16, f32> = HashMap::new();
+    if !opt.distances.exists() {
+        eprintln!("distances csv file does not exist!");
+        ::std::process::exit(1);
+    }
+
+    // load the dispersion table
+    let mut dispersion_table: HashMap<i16, f32> = load_csv_data(&opt.distances)
+        .expect("Could not load csv data!");
 
     // load array from file
     let input = load(&opt.input).expect("couldn't load numpy array!");
@@ -229,4 +244,26 @@ fn output_f32<P: AsRef<Path>>(array: &Array2<f32>, path: P) {
         let mut npz = NpzWriter::new_compressed(writer);
         npz.add_array("a", &array);
     }
+}
+
+/// load the csv data for the spreading functions
+fn load_csv_data<P: AsRef<Path>>(path: P) -> Option<HashMap<u16, f32>> {
+    #[derive(Deserialize)]
+    struct Record {
+        pub code: u16,
+        pub dist: f32,
+    }
+    // construct output
+    let mut table: HashMap<u16, f32> = HashMap::new();
+    // open the csv file
+    if let Ok(ref f) = fs::File::open(path.as_ref()) {
+        let mut rdr = csv::Reader::from_reader(f);
+        for result in rdr.deserialize::<Record>() {
+            if let Ok(record) = result {
+                table.insert(record.code, record.dist);
+            }
+        }
+    }
+    // return the table
+    Some(table)
 }
