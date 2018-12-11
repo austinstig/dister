@@ -1,0 +1,10 @@
+input="./example/ecoregions.npz"
+distances="./example/distances.csv"
+envelopes="./example/envelopes.csv"
+output_directory="./example/output"
+dispersion_directory="./example/dispersion"
+temperature_directory="./example/temp"
+precipitation_directory="./example/precip"
+iters=100
+years=1
+seed=10
